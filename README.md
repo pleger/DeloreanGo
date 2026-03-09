@@ -38,6 +38,146 @@ Run it for a single folder:
 go run ./cmd/timepointgen -w ./example_auto
 ```
 
+## Ejemplos completos (con transformación AST)
+
+Los 3 ejemplos siguientes muestran el flujo end-to-end:
+
+1. Escribes código con `timepoint.Create(...)` sin `WithVariables(...)`.
+2. Ejecutas el transformador AST (`timepointgen`).
+3. Ejecutas el programa ya instrumentado.
+
+### Ejemplo 1: checkpoint + `Resume` con override
+
+Código fuente (antes de transformar):
+
+```go
+package main
+
+import (
+	"fmt"
+	"timepointlib/timepoint"
+)
+
+func main() {
+	step := 1
+	status := "new"
+
+	p, _ := timepoint.Create(
+		timepoint.WithName("order-checkpoint"),
+		timepoint.WithResume(func(*timepoint.Timepoint) error {
+			fmt.Println("resume:", step, status)
+			return nil
+		}),
+	)
+
+	step = 99
+	status = "mutated"
+	_ = p.Resume(map[string]any{"status": "overridden"})
+}
+```
+
+Transformación AST:
+
+```bash
+go run ./cmd/timepointgen -w ./ruta/del/ejemplo1
+```
+
+Resultado esperado de la transformación (simplificado):
+
+```go
+p, _ := timepoint.Create(
+	timepoint.WithVariables(
+		timepoint.AnyVar("step", &step),
+		timepoint.AnyVar("status", &status),
+	),
+	timepoint.WithName("order-checkpoint"),
+	timepoint.WithResume(...),
+)
+```
+
+Ejecución:
+
+```bash
+go run ./ruta/del/ejemplo1
+```
+
+### Ejemplo 2: `RestoreStack` + `RestoreHeap`
+
+Código fuente (antes de transformar):
+
+```go
+package main
+
+import "timepointlib/timepoint"
+
+type Session struct{ Quota int }
+
+func main() {
+	counter := 10
+	session := &Session{Quota: 3}
+
+	p, _ := timepoint.Create(timepoint.WithName("partial-restore"))
+
+	counter = 50
+	session.Quota = 0
+
+	_ = p.RestoreStack(nil) // restaura variables marcadas para stack
+	_ = p.RestoreHeap(nil)  // restaura variables marcadas para heap
+}
+```
+
+Transformación AST:
+
+```bash
+go run ./cmd/timepointgen -w ./ruta/del/ejemplo2
+```
+
+Instrumentación generada (simplificada):
+
+```go
+p, _ := timepoint.Create(
+	timepoint.WithVariables(
+		timepoint.AnyVar("counter", &counter),
+		timepoint.AnyVar("session", &session),
+	),
+	timepoint.WithName("partial-restore"),
+)
+```
+
+Ejecución:
+
+```bash
+go run ./ruta/del/ejemplo2
+```
+
+### Ejemplo 3: flujo automático con `go generate`
+
+Código fuente:
+
+```go
+package main
+
+import "timepointlib/timepoint"
+
+//go:generate go run ../cmd/timepointgen -w .
+
+func main() {
+	value := 7
+	p, _ := timepoint.Create(timepoint.WithName("auto-generate"))
+	value = 100
+	_ = p.Resume(nil)
+}
+```
+
+Proceso completo:
+
+```bash
+go generate ./ruta/del/ejemplo3
+go run ./ruta/del/ejemplo3
+```
+
+Con este patrón, el paso AST queda integrado en el flujo de build del ejemplo/proyecto.
+
 ## Run the example
 
 ```bash
