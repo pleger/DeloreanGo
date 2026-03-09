@@ -1,0 +1,336 @@
+=== RUN   TestDeepCopyHandlesNestedStructSliceMap
+--- PASS: TestDeepCopyHandlesNestedStructSliceMap (0.00s)
+=== RUN   TestDeepCopyPreservesPointerCycles
+--- PASS: TestDeepCopyPreservesPointerCycles (0.00s)
+=== RUN   TestDeepCopyPreservesSharedPointers
+--- PASS: TestDeepCopyPreservesSharedPointers (0.00s)
+=== RUN   TestDeepCopyKeepsReferenceForChannelsAndFuncs
+--- PASS: TestDeepCopyKeepsReferenceForChannelsAndFuncs (0.00s)
+=== RUN   TestCoerceToTypeSupportsAssignmentAndConversion
+--- PASS: TestCoerceToTypeSupportsAssignmentAndConversion (0.00s)
+=== RUN   TestCoerceToTypeNilRules
+--- PASS: TestCoerceToTypeNilRules (0.00s)
+=== RUN   TestCoerceToTypeRejectsMismatch
+--- PASS: TestCoerceToTypeRejectsMismatch (0.00s)
+=== RUN   TestCoerceToTypeMatrix
+=== RUN   TestCoerceToTypeMatrix/int_to_int
+=== RUN   TestCoerceToTypeMatrix/int32_to_int64
+=== RUN   TestCoerceToTypeMatrix/int_to_aliasInt
+=== RUN   TestCoerceToTypeMatrix/aliasInt_to_int
+=== RUN   TestCoerceToTypeMatrix/uint8_to_uint16
+=== RUN   TestCoerceToTypeMatrix/float32_to_float64
+=== RUN   TestCoerceToTypeMatrix/complex64_to_complex128
+=== RUN   TestCoerceToTypeMatrix/string_to_aliasString
+=== RUN   TestCoerceToTypeMatrix/aliasString_to_string
+=== RUN   TestCoerceToTypeMatrix/string_to_bytes
+=== RUN   TestCoerceToTypeMatrix/bytes_to_string
+=== RUN   TestCoerceToTypeMatrix/bool_assign
+=== RUN   TestCoerceToTypeMatrix/map_assign
+=== RUN   TestCoerceToTypeMatrix/slice_assign
+=== RUN   TestCoerceToTypeMatrix/array_assign
+=== RUN   TestCoerceToTypeMatrix/pointer_assign
+=== RUN   TestCoerceToTypeMatrix/interface_any
+=== RUN   TestCoerceToTypeMatrix/nil_ptr
+=== RUN   TestCoerceToTypeMatrix/nil_slice
+=== RUN   TestCoerceToTypeMatrix/nil_map
+=== RUN   TestCoerceToTypeMatrix/nil_chan
+=== RUN   TestCoerceToTypeMatrix/nil_interface
+=== RUN   TestCoerceToTypeMatrix/string_to_int_fails
+=== RUN   TestCoerceToTypeMatrix/int_to_stringer_fails
+=== RUN   TestCoerceToTypeMatrix/nil_to_int_fails
+=== RUN   TestCoerceToTypeMatrix/slice_type_mismatch
+=== RUN   TestCoerceToTypeMatrix/map_type_mismatch
+=== RUN   TestCoerceToTypeMatrix/chan_type_mismatch
+=== RUN   TestCoerceToTypeMatrix/array_len_mismatch
+=== RUN   TestCoerceToTypeMatrix/struct_mismatch
+=== RUN   TestCoerceToTypeMatrix/rune_to_int32
+=== RUN   TestCoerceToTypeMatrix/byte_to_int
+=== RUN   TestCoerceToTypeMatrix/int16_to_int32
+=== RUN   TestCoerceToTypeMatrix/uint16_to_uint32
+=== RUN   TestCoerceToTypeMatrix/uintptr_to_uint64
+=== RUN   TestCoerceToTypeMatrix/float64_to_float32
+=== RUN   TestCoerceToTypeMatrix/complex128_to_complex64
+=== RUN   TestCoerceToTypeMatrix/alias_string_to_bytes
+=== RUN   TestCoerceToTypeMatrix/bytes_to_alias_string
+=== RUN   TestCoerceToTypeMatrix/int_to_float64
+=== RUN   TestCoerceToTypeMatrix/float32_to_int
+=== RUN   TestCoerceToTypeMatrix/int_to_bool_fails
+=== RUN   TestCoerceToTypeMatrix/bool_to_int_fails
+=== RUN   TestCoerceToTypeMatrix/func_mismatch
+=== RUN   TestCoerceToTypeMatrix/pointer_mismatch
+=== RUN   TestCoerceToTypeMatrix/uint_to_int
+=== RUN   TestCoerceToTypeMatrix/int_to_uint
+=== RUN   TestCoerceToTypeMatrix/int_to_int8
+=== RUN   TestCoerceToTypeMatrix/int8_to_int64
+=== RUN   TestCoerceToTypeMatrix/uint32_to_float64
+=== RUN   TestCoerceToTypeMatrix/float64_to_aliasInt
+=== RUN   TestCoerceToTypeMatrix/string_to_rune_slice
+=== RUN   TestCoerceToTypeMatrix/rune_slice_to_string
+=== RUN   TestCoerceToTypeMatrix/empty_struct_assign
+=== RUN   TestCoerceToTypeMatrix/named_to_named_same_base
+--- PASS: TestCoerceToTypeMatrix (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_int (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int32_to_int64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_aliasInt (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/aliasInt_to_int (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/uint8_to_uint16 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/float32_to_float64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/complex64_to_complex128 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/string_to_aliasString (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/aliasString_to_string (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/string_to_bytes (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/bytes_to_string (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/bool_assign (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/map_assign (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/slice_assign (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/array_assign (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/pointer_assign (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/interface_any (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/nil_ptr (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/nil_slice (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/nil_map (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/nil_chan (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/nil_interface (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/string_to_int_fails (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_stringer_fails (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/nil_to_int_fails (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/slice_type_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/map_type_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/chan_type_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/array_len_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/struct_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/rune_to_int32 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/byte_to_int (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int16_to_int32 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/uint16_to_uint32 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/uintptr_to_uint64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/float64_to_float32 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/complex128_to_complex64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/alias_string_to_bytes (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/bytes_to_alias_string (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_float64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/float32_to_int (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_bool_fails (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/bool_to_int_fails (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/func_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/pointer_mismatch (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/uint_to_int (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_uint (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int_to_int8 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/int8_to_int64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/uint32_to_float64 (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/float64_to_aliasInt (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/string_to_rune_slice (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/rune_slice_to_string (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/empty_struct_assign (0.00s)
+    --- PASS: TestCoerceToTypeMatrix/named_to_named_same_base (0.00s)
+=== RUN   TestCanBeNilMatrix
+=== RUN   TestCanBeNilMatrix/ptr
+=== RUN   TestCanBeNilMatrix/map
+=== RUN   TestCanBeNilMatrix/slice
+=== RUN   TestCanBeNilMatrix/interface
+=== RUN   TestCanBeNilMatrix/func
+=== RUN   TestCanBeNilMatrix/chan
+=== RUN   TestCanBeNilMatrix/int
+=== RUN   TestCanBeNilMatrix/string
+=== RUN   TestCanBeNilMatrix/bool
+=== RUN   TestCanBeNilMatrix/struct
+=== RUN   TestCanBeNilMatrix/array
+=== RUN   TestCanBeNilMatrix/uintptr
+=== RUN   TestCanBeNilMatrix/float
+=== RUN   TestCanBeNilMatrix/complex
+=== RUN   TestCanBeNilMatrix/alias_int
+=== RUN   TestCanBeNilMatrix/alias_string
+--- PASS: TestCanBeNilMatrix (0.00s)
+    --- PASS: TestCanBeNilMatrix/ptr (0.00s)
+    --- PASS: TestCanBeNilMatrix/map (0.00s)
+    --- PASS: TestCanBeNilMatrix/slice (0.00s)
+    --- PASS: TestCanBeNilMatrix/interface (0.00s)
+    --- PASS: TestCanBeNilMatrix/func (0.00s)
+    --- PASS: TestCanBeNilMatrix/chan (0.00s)
+    --- PASS: TestCanBeNilMatrix/int (0.00s)
+    --- PASS: TestCanBeNilMatrix/string (0.00s)
+    --- PASS: TestCanBeNilMatrix/bool (0.00s)
+    --- PASS: TestCanBeNilMatrix/struct (0.00s)
+    --- PASS: TestCanBeNilMatrix/array (0.00s)
+    --- PASS: TestCanBeNilMatrix/uintptr (0.00s)
+    --- PASS: TestCanBeNilMatrix/float (0.00s)
+    --- PASS: TestCanBeNilMatrix/complex (0.00s)
+    --- PASS: TestCanBeNilMatrix/alias_int (0.00s)
+    --- PASS: TestCanBeNilMatrix/alias_string (0.00s)
+=== RUN   TestDeepCopyPrimitiveMatrix
+=== RUN   TestDeepCopyPrimitiveMatrix/bool_true
+=== RUN   TestDeepCopyPrimitiveMatrix/bool_false
+=== RUN   TestDeepCopyPrimitiveMatrix/int
+=== RUN   TestDeepCopyPrimitiveMatrix/int8
+=== RUN   TestDeepCopyPrimitiveMatrix/int16
+=== RUN   TestDeepCopyPrimitiveMatrix/int32
+=== RUN   TestDeepCopyPrimitiveMatrix/int64
+=== RUN   TestDeepCopyPrimitiveMatrix/uint
+=== RUN   TestDeepCopyPrimitiveMatrix/uint8
+=== RUN   TestDeepCopyPrimitiveMatrix/uint16
+=== RUN   TestDeepCopyPrimitiveMatrix/uint32
+=== RUN   TestDeepCopyPrimitiveMatrix/uint64
+=== RUN   TestDeepCopyPrimitiveMatrix/uintptr
+=== RUN   TestDeepCopyPrimitiveMatrix/float32
+=== RUN   TestDeepCopyPrimitiveMatrix/float64
+=== RUN   TestDeepCopyPrimitiveMatrix/complex64
+=== RUN   TestDeepCopyPrimitiveMatrix/complex128
+=== RUN   TestDeepCopyPrimitiveMatrix/string
+=== RUN   TestDeepCopyPrimitiveMatrix/empty_string
+=== RUN   TestDeepCopyPrimitiveMatrix/alias_int
+=== RUN   TestDeepCopyPrimitiveMatrix/alias_string
+--- PASS: TestDeepCopyPrimitiveMatrix (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/bool_true (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/bool_false (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/int (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/int8 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/int16 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/int32 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/int64 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/uint (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/uint8 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/uint16 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/uint32 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/uint64 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/uintptr (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/float32 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/float64 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/complex64 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/complex128 (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/string (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/empty_string (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/alias_int (0.00s)
+    --- PASS: TestDeepCopyPrimitiveMatrix/alias_string (0.00s)
+=== RUN   TestDeepCopyReferenceIsolationMatrix
+=== RUN   TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#A
+=== RUN   TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#A
+=== RUN   TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#A
+=== RUN   TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#A
+=== RUN   TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#B
+=== RUN   TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#B
+=== RUN   TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#B
+=== RUN   TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#B
+=== RUN   TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#C
+=== RUN   TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#C
+=== RUN   TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#C
+=== RUN   TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#C
+=== RUN   TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#D
+=== RUN   TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#D
+=== RUN   TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#D
+=== RUN   TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#D
+=== RUN   TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#E
+=== RUN   TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#E
+=== RUN   TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#E
+=== RUN   TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#E
+--- PASS: TestDeepCopyReferenceIsolationMatrix (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#A (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#A (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#A (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#A (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#B (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#B (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#B (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#B (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#C (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#C (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#C (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#C (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#D (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#D (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#D (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#D (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/slice_mutation_isolated_#E (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/map_mutation_isolated_#E (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/pointer_mutation_isolated_#E (0.00s)
+    --- PASS: TestDeepCopyReferenceIsolationMatrix/combined_mutation_isolated_#E (0.00s)
+=== RUN   TestCreateRestoreRoundTripMatrix
+=== RUN   TestCreateRestoreRoundTripMatrix/int
+=== RUN   TestCreateRestoreRoundTripMatrix/int32
+=== RUN   TestCreateRestoreRoundTripMatrix/int64
+=== RUN   TestCreateRestoreRoundTripMatrix/uint
+=== RUN   TestCreateRestoreRoundTripMatrix/float32
+=== RUN   TestCreateRestoreRoundTripMatrix/float64
+=== RUN   TestCreateRestoreRoundTripMatrix/bool
+=== RUN   TestCreateRestoreRoundTripMatrix/string
+=== RUN   TestCreateRestoreRoundTripMatrix/slice
+=== RUN   TestCreateRestoreRoundTripMatrix/map
+=== RUN   TestCreateRestoreRoundTripMatrix/array
+=== RUN   TestCreateRestoreRoundTripMatrix/struct
+=== RUN   TestCreateRestoreRoundTripMatrix/aliasInt
+=== RUN   TestCreateRestoreRoundTripMatrix/aliasString
+=== RUN   TestCreateRestoreRoundTripMatrix/bytes
+=== RUN   TestCreateRestoreRoundTripMatrix/runes
+=== RUN   TestCreateRestoreRoundTripMatrix/pointer
+=== RUN   TestCreateRestoreRoundTripMatrix/nested_struct
+=== RUN   TestCreateRestoreRoundTripMatrix/map_slice
+=== RUN   TestCreateRestoreRoundTripMatrix/slice_map
+--- PASS: TestCreateRestoreRoundTripMatrix (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/int (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/int32 (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/int64 (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/uint (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/float32 (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/float64 (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/bool (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/string (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/slice (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/map (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/array (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/struct (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/aliasInt (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/aliasString (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/bytes (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/runes (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/pointer (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/nested_struct (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/map_slice (0.00s)
+    --- PASS: TestCreateRestoreRoundTripMatrix/slice_map (0.00s)
+=== RUN   TestCreateCapturesMetadata
+--- PASS: TestCreateCapturesMetadata (0.00s)
+=== RUN   TestCreateAppliesSnapshotOverrides
+--- PASS: TestCreateAppliesSnapshotOverrides (0.00s)
+=== RUN   TestCreatePropagatesOptionError
+--- PASS: TestCreatePropagatesOptionError (0.00s)
+=== RUN   TestCreateRejectsInvalidVariableRegistrations
+=== RUN   TestCreateRejectsInvalidVariableRegistrations/empty_name
+=== RUN   TestCreateRejectsInvalidVariableRegistrations/duplicate_name
+=== RUN   TestCreateRejectsInvalidVariableRegistrations/nil_pointer
+=== RUN   TestCreateRejectsInvalidVariableRegistrations/non_pointer
+=== RUN   TestCreateRejectsInvalidVariableRegistrations/incompatible_override
+--- PASS: TestCreateRejectsInvalidVariableRegistrations (0.00s)
+    --- PASS: TestCreateRejectsInvalidVariableRegistrations/empty_name (0.00s)
+    --- PASS: TestCreateRejectsInvalidVariableRegistrations/duplicate_name (0.00s)
+    --- PASS: TestCreateRejectsInvalidVariableRegistrations/nil_pointer (0.00s)
+    --- PASS: TestCreateRejectsInvalidVariableRegistrations/non_pointer (0.00s)
+    --- PASS: TestCreateRejectsInvalidVariableRegistrations/incompatible_override (0.00s)
+=== RUN   TestRestoreStackAndRestoreHeap
+--- PASS: TestRestoreStackAndRestoreHeap (0.00s)
+=== RUN   TestRestoreUsesOverrides
+--- PASS: TestRestoreUsesOverrides (0.00s)
+=== RUN   TestRestoreRejectsIncompatibleOverride
+--- PASS: TestRestoreRejectsIncompatibleOverride (0.00s)
+=== RUN   TestRestoreAllowsNilForNilableType
+--- PASS: TestRestoreAllowsNilForNilableType (0.00s)
+=== RUN   TestRestoreRejectsNilForNonNilableType
+--- PASS: TestRestoreRejectsNilForNonNilableType (0.00s)
+=== RUN   TestVariableDefaultScopeIsBoth
+--- PASS: TestVariableDefaultScopeIsBoth (0.00s)
+=== RUN   TestResumeRestoresStateAndCallsContinuation
+--- PASS: TestResumeRestoresStateAndCallsContinuation (0.00s)
+=== RUN   TestResumePropagatesCallbackError
+--- PASS: TestResumePropagatesCallbackError (0.00s)
+=== RUN   TestToStringIncludesSortedVariables
+--- PASS: TestToStringIncludesSortedVariables (0.00s)
+=== RUN   TestScopeString
+=== RUN   TestScopeString/stack
+=== RUN   TestScopeString/heap
+=== RUN   TestScopeString/stack+heap
+=== RUN   TestScopeString/unknown
+--- PASS: TestScopeString (0.00s)
+    --- PASS: TestScopeString/stack (0.00s)
+    --- PASS: TestScopeString/heap (0.00s)
+    --- PASS: TestScopeString/stack+heap (0.00s)
+    --- PASS: TestScopeString/unknown (0.00s)
+PASS
+ok  	timepointlib/timepoint	0.736s
