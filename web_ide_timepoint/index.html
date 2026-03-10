@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,10 +12,10 @@
       <header class="topbar">
         <div>
           <p class="kicker">Timepoint IDE</p>
-          <h1>Web IDE con ejecucion + timeline</h1>
+          <h1>Web IDE with execution + timeline</h1>
         </div>
         <div class="topbar-right">
-          <span id="runStatus" class="run-status">Listo</span>
+          <span id="runStatus" class="run-status">Ready</span>
         </div>
       </header>
 
@@ -27,36 +27,36 @@
             <label class="field">
               <span>Timepoint creation</span>
               <select id="tpMode">
-                <option value="explicit">Explicit (click en linea)</option>
-                <option value="implicit">Implicit (cada linea ejecutada)</option>
+                <option value="explicit">Explicit (click line number)</option>
+                <option value="implicit">Implicit (every executed line)</option>
               </select>
             </label>
 
             <label class="field">
-              <span>Velocidad (ms por paso)</span>
+              <span>Speed (ms per step)</span>
               <input id="stepDelay" type="range" min="0" max="400" step="20" value="80" />
               <small id="stepDelayLabel">80 ms</small>
             </label>
 
             <div class="action-row">
-              <button id="runBtn" class="btn primary" type="button">Ejecutar</button>
-              <button id="stopBtn" class="btn danger" type="button">Detener</button>
-              <button id="resumeBtn" class="btn accent" type="button">Resumir desde TP</button>
+              <button id="runBtn" class="btn primary" type="button">Run</button>
+              <button id="stopBtn" class="btn danger" type="button">Stop</button>
+              <button id="resumeBtn" class="btn accent" type="button">Resume from TP</button>
             </div>
           </section>
 
           <section class="panel">
             <h2>Panel 3 · Watch variables</h2>
             <div class="watch-add">
-              <input id="watchInput" type="text" placeholder="nombreVariable" />
-              <button id="addWatchBtn" class="btn" type="button">Agregar</button>
+              <input id="watchInput" type="text" placeholder="variableName" />
+              <button id="addWatchBtn" class="btn" type="button">Add</button>
             </div>
             <ul id="watchList" class="watch-list"></ul>
           </section>
 
           <section class="panel">
             <h2>Panel 5 · Timepoint variables</h2>
-            <p id="selectedTpLabel" class="muted">Selecciona un timepoint del timeline.</p>
+            <p id="selectedTpLabel" class="muted">Select a timepoint in the timeline.</p>
             <div id="tpVars" class="vars-box"></div>
           </section>
         </aside>
@@ -70,10 +70,10 @@
               </div>
 
               <div class="editor-wrapper">
-                <div id="gutter" class="gutter" aria-label="Lineas"></div>
-                <textarea id="editor" spellcheck="false" aria-label="Editor de codigo"></textarea>
+                <div id="gutter" class="gutter" aria-label="Lines"></div>
+                <textarea id="editor" spellcheck="false" aria-label="Code editor"></textarea>
               </div>
-              <p class="muted tiny">Click en numero de linea para crear/quitar timepoint explicito.</p>
+              <p class="muted tiny">Click a line number to add/remove an explicit timepoint.</p>
             </section>
 
             <section class="panel output-panel">
@@ -84,8 +84,8 @@
 
           <section class="panel timeline-panel">
             <div class="panel-title-row">
-              <h2>Panel 4 · Timeline con timepoints</h2>
-              <button id="clearRunBtn" class="btn" type="button">Limpiar ejecucion</button>
+              <h2>Panel 4 · Timeline with timepoints</h2>
+              <button id="clearRunBtn" class="btn" type="button">Clear run</button>
             </div>
 
             <div id="timeline" class="timeline" aria-label="Timeline"></div>

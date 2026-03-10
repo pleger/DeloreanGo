@@ -23,6 +23,10 @@ const app = {
   explicitTimepoints: new Map(),
   executedTimepoints: [],
   outputEntries: [],
+  timelines: [],
+  activeTimelineId: null,
+  timelineCounter: 0,
+  timepointEdits: new Map(),
   playbackOutputEntries: null,
   watchVars: ["retries", "status", "orderID"],
   runtimeState: {},
@@ -102,6 +106,173 @@ function updateCursorPos() {
   ui.cursorPos.textContent = `L${line}:C${col}`;
 }
 
+function valuesEqual(a, b) {
+  if (a === b) return true;
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch (_) {
+    return String(a) === String(b);
+  }
+}
+
+function toEditorValue(value) {
+  if (value === undefined) return "undefined";
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch (_) {
+    return String(value);
+  }
+}
+
+function parseEditorValue(raw) {
+  const trimmed = raw.trim();
+  if (trimmed === "undefined") return undefined;
+  if (trimmed === "") return "";
+
+  const looksLikeJson =
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("[") ||
+    trimmed.startsWith('"') ||
+    trimmed === "true" ||
+    trimmed === "false" ||
+    trimmed === "null" ||
+    /^-?\d+(\.\d+)?$/.test(trimmed);
+
+  if (looksLikeJson) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  return raw;
+}
+
+function clearObject(obj) {
+  Object.keys(obj).forEach((key) => {
+    delete obj[key];
+  });
+}
+
+function createTimeline(label, parentTimelineId = null, parentTpId = null, parentNodeIndex = -1) {
+  app.timelineCounter += 1;
+  return {
+    id: `tl-${app.timelineCounter}`,
+    label,
+    parentTimelineId,
+    parentTpId,
+    parentNodeIndex,
+    nodes: [],
+    outputs: [],
+  };
+}
+
+function getTimeline(timelineId) {
+  return app.timelines.find((timeline) => timeline.id === timelineId) || null;
+}
+
+function setActiveTimeline(timelineId) {
+  const timeline = getTimeline(timelineId);
+  if (!timeline) {
+    app.activeTimelineId = null;
+    app.executedTimepoints = [];
+    app.outputEntries = [];
+    return;
+  }
+
+  app.activeTimelineId = timeline.id;
+  app.executedTimepoints = timeline.nodes;
+  app.outputEntries = timeline.outputs;
+
+  const hasSelected = app.selectedExecutedId && timeline.nodes.some((node) => node.id === app.selectedExecutedId);
+  if (!hasSelected) {
+    app.selectedExecutedId = timeline.nodes.length ? timeline.nodes[timeline.nodes.length - 1].id : null;
+  }
+}
+
+function findTimepointById(timepointId) {
+  if (!timepointId) return null;
+
+  for (const timeline of app.timelines) {
+    const index = timeline.nodes.findIndex((node) => node.id === timepointId);
+    if (index >= 0) {
+      return {
+        timeline,
+        tp: timeline.nodes[index],
+        index,
+      };
+    }
+  }
+
+  return null;
+}
+
+function selectedTimepointInfo() {
+  return findTimepointById(app.selectedExecutedId);
+}
+
+function buildEditedSnapshot(tp) {
+  const base = deepClone(tp.snapshot || {});
+  const edits = app.timepointEdits.get(tp.id) || {};
+  Object.entries(edits).forEach(([key, value]) => {
+    base[key] = value;
+  });
+  return base;
+}
+
+function saveEditsForTimepoint(timepointId, options = {}) {
+  const { notify = true, rerender = true } = options;
+  const info = findTimepointById(timepointId);
+  if (!info) return false;
+
+  const rows = ui.tpVars.querySelectorAll("input[data-var-name]");
+  if (!rows.length) return false;
+
+  const base = info.tp.snapshot || {};
+  const nextEdits = {};
+
+  rows.forEach((input) => {
+    const key = input.dataset.varName;
+    const parsed = parseEditorValue(input.value);
+    if (!valuesEqual(parsed, base[key])) {
+      nextEdits[key] = parsed;
+    }
+  });
+
+  if (Object.keys(nextEdits).length > 0) {
+    app.timepointEdits.set(timepointId, nextEdits);
+  } else {
+    app.timepointEdits.delete(timepointId);
+  }
+
+  if (notify) {
+    setStatus("Timepoint edits saved", "ok");
+  }
+
+  if (rerender) {
+    renderAll();
+  }
+
+  return true;
+}
+
+function createRunner(code) {
+  return new Function(
+    "__ctx",
+    `
+      return (async function () {
+        const state = __ctx.state;
+        const console = __ctx.console;
+        with (state) {
+          ${code}
+        }
+      })();
+    `,
+  );
+}
+
 function transformLine(line) {
   const varDecl = line.match(/^(\s*)(let|const|var)\s+([A-Za-z_$][\w$]*)\s*(=.*)?;?\s*$/);
   if (varDecl) {
@@ -133,6 +304,7 @@ function buildInstrumentedCode(source) {
       chunks.push("");
       return;
     }
+
     const trimmed = line.trim();
     const skipHook =
       /^}?\s*(else|catch|finally)\b/.test(trimmed) ||
@@ -157,7 +329,7 @@ function shouldHitTimepoint(line) {
   return Boolean(tp && tp.enabled !== false);
 }
 
-function registerHit(line, elapsedMs) {
+function registerHit(line, elapsedMs, globalHitIndex = null) {
   const explicit = app.explicitTimepoints.get(line);
   const name = explicit?.name || `Implicit-L${line}`;
   const snapshot = deepClone(app.runtimeState);
@@ -166,10 +338,12 @@ function registerHit(line, elapsedMs) {
   const entry = {
     id,
     run: app.runCounter,
+    timelineId: app.activeTimelineId,
     line,
     time: elapsedMs,
     mode: explicit ? "explicit" : "implicit",
     name,
+    globalHitIndex: globalHitIndex ?? app.executedTimepoints.length,
     snapshot,
   };
 
@@ -181,6 +355,7 @@ function pushOutput(kind, parts, elapsedMs, line) {
   const text = parts.map((p) => (typeof p === "string" ? p : shortValue(p))).join(" ");
   app.outputEntries.push({
     id: `${kind}-${app.outputEntries.length + 1}`,
+    timelineId: app.activeTimelineId,
     kind,
     text,
     line,
@@ -189,14 +364,15 @@ function pushOutput(kind, parts, elapsedMs, line) {
 }
 
 function visibleState() {
-  const selected = app.executedTimepoints.find((tp) => tp.id === app.selectedExecutedId);
-  if (selected) return selected.snapshot || {};
+  const selectedInfo = selectedTimepointInfo();
+  if (selectedInfo) {
+    return buildEditedSnapshot(selectedInfo.tp);
+  }
   return app.runtimeState || {};
 }
 
 function renderGutter() {
   const total = lineCount();
-  const hitLines = new Set(app.executedTimepoints.map((tp) => tp.line));
   const frag = document.createDocumentFragment();
 
   for (let line = 1; line <= total; line += 1) {
@@ -206,7 +382,6 @@ function renderGutter() {
     btn.textContent = String(line);
 
     if (app.explicitTimepoints.has(line)) btn.classList.add("tp-explicit");
-    if (hitLines.has(line)) btn.classList.add("tp-hit");
     if (line === app.currentLine) btn.classList.add("current");
 
     btn.addEventListener("click", () => {
@@ -215,7 +390,7 @@ function renderGutter() {
         app.explicitTimepoints.delete(line);
       } else {
         const suggested = defaultTpName(line);
-        const userName = window.prompt(`Nombre del timepoint en linea ${line}:`, suggested);
+        const userName = window.prompt(`Timepoint name at line ${line}:`, suggested);
         if (userName === null) return;
         app.explicitTimepoints.set(line, {
           line,
@@ -236,7 +411,7 @@ function renderGutter() {
 function renderOutput() {
   const source = app.playbackOutputEntries || app.outputEntries;
   if (!source.length) {
-    ui.outputBox.innerHTML = '<p class="empty">Sin salida todavia.</p>';
+    ui.outputBox.innerHTML = '<p class="empty">No output yet.</p>';
     return;
   }
 
@@ -292,7 +467,7 @@ function renderWatchList() {
   if (!app.watchVars.length) {
     const empty = document.createElement("li");
     empty.className = "watch-item";
-    empty.textContent = "No hay variables en watch.";
+    empty.textContent = "No watched variables.";
     frag.appendChild(empty);
   }
 
@@ -300,66 +475,138 @@ function renderWatchList() {
 }
 
 function renderTimepointVars() {
-  const selected = app.executedTimepoints.find((tp) => tp.id === app.selectedExecutedId);
-  if (!selected) {
-    ui.selectedTpLabel.textContent = "Selecciona un timepoint del timeline.";
+  const selectedInfo = selectedTimepointInfo();
+  if (!selectedInfo) {
+    ui.selectedTpLabel.textContent = "Select a timepoint in the timeline.";
     ui.tpVars.textContent = "";
+    delete ui.tpVars.dataset.tpId;
     return;
   }
 
-  ui.selectedTpLabel.textContent = `${selected.name} · linea ${selected.line} · ${Math.round(selected.time)}ms`;
+  const { timeline, tp } = selectedInfo;
+  const baseSnapshot = tp.snapshot || {};
+  const editedSnapshot = buildEditedSnapshot(tp);
 
-  const entries = Object.entries(selected.snapshot || {});
+  ui.selectedTpLabel.textContent = `${tp.name} · line ${tp.line} · ${Math.round(tp.time)}ms · ${timeline.label}`;
+  ui.tpVars.innerHTML = "";
+  ui.tpVars.dataset.tpId = tp.id;
+
+  const entries = Object.entries(baseSnapshot);
   if (!entries.length) {
-    ui.tpVars.textContent = "Snapshot vacio.";
+    ui.tpVars.textContent = "Empty snapshot.";
     return;
   }
 
-  ui.tpVars.textContent = entries
+  const grid = document.createElement("div");
+  grid.className = "tp-vars-grid";
+
+  entries
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}: ${shortValue(v)}`)
-    .join("\n");
+    .forEach(([key]) => {
+      const row = document.createElement("div");
+      row.className = "tp-var-row";
+
+      const keyEl = document.createElement("span");
+      keyEl.className = "tp-var-key";
+      keyEl.textContent = key;
+
+      const input = document.createElement("input");
+      input.className = "tp-var-input";
+      input.type = "text";
+      input.dataset.varName = key;
+      input.value = toEditorValue(editedSnapshot[key]);
+
+      row.append(keyEl, input);
+      grid.appendChild(row);
+    });
+
+  const actions = document.createElement("div");
+  actions.className = "tp-var-actions";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "btn";
+  saveBtn.textContent = "Save edits";
+  saveBtn.addEventListener("click", () => {
+    saveEditsForTimepoint(tp.id, { notify: true, rerender: true });
+  });
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "btn";
+  resetBtn.textContent = "Reset edits";
+  resetBtn.addEventListener("click", () => {
+    app.timepointEdits.delete(tp.id);
+    setStatus("Timepoint edits reset", "idle");
+    renderAll();
+  });
+
+  actions.append(saveBtn, resetBtn);
+
+  const note = document.createElement("p");
+  note.className = "muted tiny";
+  note.textContent = "Tip: numbers/objects can be entered as JSON. Plain text is treated as string.";
+
+  ui.tpVars.append(grid, actions, note);
 }
 
 function renderTimeline() {
   ui.timeline.innerHTML = "";
 
-  if (!app.executedTimepoints.length) {
-    ui.timeline.innerHTML = '<p class="empty">Sin ejecucion todavia. Crea timepoints y pulsa Ejecutar.</p>';
+  const nonEmptyTimelines = app.timelines.filter((timeline) => timeline.nodes.length > 0);
+  if (!nonEmptyTimelines.length) {
+    ui.timeline.innerHTML = '<p class="empty">No execution yet. Create timepoints and click Run.</p>';
     return;
   }
 
-  const track = document.createElement("div");
-  track.className = "timeline-track";
+  const frag = document.createDocumentFragment();
 
-  app.executedTimepoints.forEach((tp, idx) => {
-    const node = document.createElement("button");
-    node.type = "button";
-    node.className = `timeline-node ${tp.mode === "explicit" ? "explicit" : ""} ${tp.id === app.selectedExecutedId ? "selected" : ""}`;
-    node.textContent = String(idx + 1);
-    node.title = `${tp.name} (L${tp.line})`;
+  nonEmptyTimelines.forEach((timeline) => {
+    const row = document.createElement("div");
+    row.className = `timeline-row ${timeline.id === app.activeTimelineId ? "active" : ""}`;
 
-    const time = document.createElement("span");
-    time.className = "timeline-time";
-    time.textContent = `${Math.round(tp.time)}ms`;
+    const title = document.createElement("div");
+    title.className = "timeline-title";
+    title.textContent = timeline.id === app.activeTimelineId ? `${timeline.label} (active)` : timeline.label;
 
-    const label = document.createElement("span");
-    label.className = "timeline-label";
-    label.textContent = `${tp.name} · L${tp.line}`;
+    const track = document.createElement("div");
+    track.className = `timeline-track ${timeline.parentNodeIndex >= 0 ? "branch" : ""}`;
+    if (timeline.parentNodeIndex >= 0) {
+      track.style.marginLeft = `${timeline.parentNodeIndex * 58}px`;
+    }
 
-    node.append(time, label);
+    timeline.nodes.forEach((tp, idx) => {
+      const node = document.createElement("button");
+      node.type = "button";
+      node.className = `timeline-node ${tp.mode === "explicit" ? "explicit" : ""} ${tp.id === app.selectedExecutedId ? "selected" : ""}`;
+      node.textContent = String(idx + 1);
+      node.title = `${tp.name} (L${tp.line})`;
 
-    node.addEventListener("click", () => {
-      app.selectedExecutedId = tp.id;
-      app.currentLine = tp.line;
-      app.playbackOutputEntries = null;
-      renderAll();
+      const time = document.createElement("span");
+      time.className = "timeline-time";
+      time.textContent = `${Math.round(tp.time)}ms`;
+
+      const label = document.createElement("span");
+      label.className = "timeline-label";
+      label.textContent = `${tp.name} · L${tp.line}`;
+
+      node.append(time, label);
+      node.addEventListener("click", () => {
+        setActiveTimeline(timeline.id);
+        app.selectedExecutedId = tp.id;
+        app.currentLine = tp.line;
+        app.playbackOutputEntries = null;
+        renderAll();
+      });
+
+      track.appendChild(node);
     });
 
-    track.appendChild(node);
+    row.append(title, track);
+    frag.appendChild(row);
   });
 
-  ui.timeline.appendChild(track);
+  ui.timeline.appendChild(frag);
 }
 
 function renderAll() {
@@ -378,18 +625,22 @@ async function executeCode() {
   app.running = true;
   app.stopRequested = false;
   app.playbackOutputEntries = null;
-  app.executedTimepoints = [];
-  app.outputEntries = [];
   app.selectedExecutedId = null;
   app.runtimeState = {};
   app.currentLine = 1;
   app.runCounter += 1;
   app.runStart = performance.now();
+  app.timepointEdits.clear();
 
-  setStatus("Ejecutando...", "idle");
+  const rootTimeline = createTimeline(`Run ${app.runCounter}`);
+  app.timelines = [rootTimeline];
+  setActiveTimeline(rootTimeline.id);
+
+  setStatus("Running...", "idle");
   renderAll();
 
   const { code } = buildInstrumentedCode(ui.editor.value);
+  const run = createRunner(code);
 
   const ctx = {
     state: app.runtimeState,
@@ -416,28 +667,150 @@ async function executeCode() {
   };
 
   try {
-    const run = new Function(
-      "__ctx",
-      `
-      return (async function () {
-        const state = __ctx.state;
-        const console = __ctx.console;
-        with (state) {
-          ${code}
-        }
-      })();
-    `,
-    );
-
     await run(ctx);
-    setStatus("Ejecucion finalizada", "ok");
+    setStatus("Execution finished", "ok");
   } catch (err) {
     if (err && err.__stop) {
-      pushOutput("warn", ["Ejecucion detenida por usuario"], performance.now() - app.runStart, app.currentLine);
-      setStatus("Detenido", "error");
+      pushOutput("warn", ["Execution stopped by user"], performance.now() - app.runStart, app.currentLine);
+      setStatus("Stopped", "error");
     } else {
       pushOutput("error", [err?.message || String(err)], performance.now() - app.runStart, app.currentLine);
-      setStatus("Error en ejecucion", "error");
+      setStatus("Execution error", "error");
+    }
+  } finally {
+    app.running = false;
+    renderAll();
+  }
+}
+
+async function runBranchedExecution(selectedInfo, editedSnapshot) {
+  app.running = true;
+  app.stopRequested = false;
+  app.playbackOutputEntries = null;
+  app.runCounter += 1;
+  app.runtimeState = {};
+  app.currentLine = selectedInfo.tp.line;
+  app.runStart = performance.now();
+
+  const branchLabel = `Branch ${app.timelineCounter + 1} from ${selectedInfo.tp.name}`;
+  const branchTimeline = createTimeline(
+    branchLabel,
+    selectedInfo.timeline.id,
+    selectedInfo.tp.id,
+    selectedInfo.index,
+  );
+
+  app.timelines.push(branchTimeline);
+  setActiveTimeline(branchTimeline.id);
+  app.selectedExecutedId = null;
+
+  setStatus("Running branched execution...", "idle");
+  renderAll();
+
+  const { code } = buildInstrumentedCode(ui.editor.value);
+  const run = createRunner(code);
+
+  let seenHits = -1;
+  let branchStarted = false;
+  let branchStartClock = 0;
+
+  const ctx = {
+    state: app.runtimeState,
+    console: {
+      log: (...parts) => {
+        if (!branchStarted) return;
+        pushOutput("log", parts, performance.now() - branchStartClock, app.currentLine);
+      },
+      warn: (...parts) => {
+        if (!branchStarted) return;
+        pushOutput("warn", parts, performance.now() - branchStartClock, app.currentLine);
+      },
+      error: (...parts) => {
+        if (!branchStarted) return;
+        pushOutput("error", parts, performance.now() - branchStartClock, app.currentLine);
+      },
+    },
+    __line: (line) => {
+      if (app.stopRequested) {
+        const stopErr = new Error("STOPPED");
+        stopErr.__stop = true;
+        throw stopErr;
+      }
+
+      app.currentLine = line;
+
+      if (!shouldHitTimepoint(line)) {
+        if (branchStarted) {
+          renderAll();
+        }
+        return;
+      }
+
+      seenHits += 1;
+      const targetGlobalIndex =
+        selectedInfo.tp.globalHitIndex !== undefined ? selectedInfo.tp.globalHitIndex : selectedInfo.index;
+      const reachedSelectedHit = seenHits === targetGlobalIndex && line === selectedInfo.tp.line;
+
+      if (!branchStarted && reachedSelectedHit) {
+        clearObject(app.runtimeState);
+        Object.assign(app.runtimeState, deepClone(editedSnapshot));
+        branchStarted = true;
+        branchStartClock = performance.now();
+
+        const explicit = app.explicitTimepoints.get(line);
+        const id = `run${app.runCounter}-tp${app.executedTimepoints.length + 1}`;
+        const entry = {
+          id,
+          run: app.runCounter,
+          timelineId: app.activeTimelineId,
+          line,
+          time: 0,
+          mode: explicit ? "explicit" : "implicit",
+          name: `${selectedInfo.tp.name} (edited)`,
+          globalHitIndex: seenHits,
+          snapshot: deepClone(app.runtimeState),
+        };
+
+        app.executedTimepoints.push(entry);
+        app.selectedExecutedId = entry.id;
+        renderAll();
+        return;
+      }
+
+      if (branchStarted) {
+        registerHit(line, performance.now() - branchStartClock, seenHits);
+        renderAll();
+      }
+    },
+  };
+
+  try {
+    await run(ctx);
+
+    if (!branchStarted) {
+      app.timelines = app.timelines.filter((timeline) => timeline.id !== branchTimeline.id);
+      setActiveTimeline(selectedInfo.timeline.id);
+      app.selectedExecutedId = selectedInfo.tp.id;
+      setStatus("Could not reach selected timepoint for branch", "error");
+      return;
+    }
+
+    setStatus("Branched execution finished", "ok");
+  } catch (err) {
+    if (err && err.__stop) {
+      if (!branchStarted) {
+        app.timelines = app.timelines.filter((timeline) => timeline.id !== branchTimeline.id);
+        setActiveTimeline(selectedInfo.timeline.id);
+        app.selectedExecutedId = selectedInfo.tp.id;
+      } else {
+        pushOutput("warn", ["Branched execution stopped by user"], performance.now() - branchStartClock, app.currentLine);
+      }
+      setStatus("Stopped", "error");
+    } else {
+      if (branchStarted) {
+        pushOutput("error", [err?.message || String(err)], performance.now() - branchStartClock, app.currentLine);
+      }
+      setStatus("Execution error", "error");
     }
   } finally {
     app.running = false;
@@ -447,22 +820,35 @@ async function executeCode() {
 
 async function resumeFromSelectedTimepoint() {
   if (app.running || app.playbackRunning) return;
-  if (!app.executedTimepoints.length) {
-    setStatus("No hay una ejecucion para resumir", "error");
+
+  const selectedInfo = selectedTimepointInfo();
+  if (!selectedInfo) {
+    setStatus("Select a timepoint in the timeline", "error");
     return;
   }
 
+  saveEditsForTimepoint(selectedInfo.tp.id, { notify: false, rerender: false });
+  const editedSnapshot = buildEditedSnapshot(selectedInfo.tp);
+  const hasEditedValues = !valuesEqual(editedSnapshot, selectedInfo.tp.snapshot || {});
+
+  if (hasEditedValues) {
+    await runBranchedExecution(selectedInfo, editedSnapshot);
+    return;
+  }
+
+  setActiveTimeline(selectedInfo.timeline.id);
   app.stopRequested = false;
-  const startIdx = app.executedTimepoints.findIndex((tp) => tp.id === app.selectedExecutedId);
+
+  const startIdx = app.executedTimepoints.findIndex((tp) => tp.id === selectedInfo.tp.id);
   if (startIdx < 0) {
-    setStatus("Selecciona un timepoint en el timeline", "error");
+    setStatus("Select a timepoint in the timeline", "error");
     return;
   }
 
   app.playbackRunning = true;
   app.playbackOutputEntries = [];
   const startTime = app.executedTimepoints[startIdx].time;
-  setStatus("Reanudando desde timepoint seleccionado...", "idle");
+  setStatus("Resuming from selected timepoint...", "idle");
 
   for (let i = startIdx; i < app.executedTimepoints.length; i += 1) {
     if (app.stopRequested) break;
@@ -478,27 +864,32 @@ async function resumeFromSelectedTimepoint() {
 
   app.playbackRunning = false;
   if (app.stopRequested) {
-    setStatus("Reanudacion detenida", "error");
+    setStatus("Resume stopped", "error");
   } else {
-    setStatus("Reanudacion finalizada", "ok");
+    setStatus("Resume finished", "ok");
   }
 }
 
 function stopExecution() {
   if (!app.running && !app.playbackRunning) return;
   app.stopRequested = true;
-  setStatus("Deteniendo...", "error");
+  setStatus("Stopping...", "error");
 }
 
 function clearRun() {
   if (app.running || app.playbackRunning) return;
+
+  app.timelines = [];
   app.executedTimepoints = [];
   app.outputEntries = [];
+  app.activeTimelineId = null;
   app.playbackOutputEntries = null;
   app.selectedExecutedId = null;
   app.currentLine = 1;
   app.stopRequested = false;
-  setStatus("Listo", "idle");
+  app.timepointEdits.clear();
+
+  setStatus("Ready", "idle");
   renderAll();
 }
 
@@ -517,23 +908,29 @@ ui.editor.addEventListener("input", () => {
   app.currentLine = 1;
   renderAll();
 });
+
 ui.editor.addEventListener("scroll", () => {
   ui.gutter.scrollTop = ui.editor.scrollTop;
 });
+
 ui.editor.addEventListener("keyup", updateCursorPos);
 ui.editor.addEventListener("click", updateCursorPos);
+
 ui.tpMode.addEventListener("change", () => {
   app.mode = ui.tpMode.value;
   renderAll();
 });
+
 ui.stepDelay.addEventListener("input", () => {
   app.delayMs = Number(ui.stepDelay.value);
   ui.stepDelayLabel.textContent = `${app.delayMs} ms`;
 });
+
 ui.addWatchBtn.addEventListener("click", addWatchVariable);
 ui.watchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") addWatchVariable();
 });
+
 ui.runBtn.addEventListener("click", executeCode);
 ui.stopBtn.addEventListener("click", stopExecution);
 ui.resumeBtn.addEventListener("click", resumeFromSelectedTimepoint);
