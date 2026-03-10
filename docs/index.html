@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Timepoint IDE Web</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="kicker">Timepoint IDE</p>
+          <h1>Web IDE with execution + timeline</h1>
+        </div>
+        <div class="topbar-right">
+          <span id="runStatus" class="run-status">Ready</span>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="panel">
+            <h2>Panel 6 · Settings</h2>
+
+            <label class="field">
+              <span>Timepoint creation</span>
+              <select id="tpMode">
+                <option value="explicit">Explicit (click line number)</option>
+                <option value="implicit">Implicit (every executed line)</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Speed (ms per step)</span>
+              <input id="stepDelay" type="range" min="0" max="400" step="20" value="80" />
+              <small id="stepDelayLabel">80 ms</small>
+            </label>
+
+            <div class="action-row">
+              <button id="runBtn" class="btn primary" type="button">Run</button>
+              <button id="stopBtn" class="btn danger" type="button">Stop</button>
+              <button id="resumeBtn" class="btn accent" type="button">Resume from TP</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2>Panel 3 · Watch variables</h2>
+            <div class="watch-add">
+              <input id="watchInput" type="text" placeholder="variableName" />
+              <button id="addWatchBtn" class="btn" type="button">Add</button>
+            </div>
+            <ul id="watchList" class="watch-list"></ul>
+          </section>
+
+          <section class="panel">
+            <h2>Panel 5 · Timepoint variables</h2>
+            <p id="selectedTpLabel" class="muted">Select a timepoint in the timeline.</p>
+            <div id="tpVars" class="vars-box"></div>
+          </section>
+        </aside>
+
+        <section class="main-area">
+          <div class="top-panels">
+            <section class="panel source-panel">
+              <div class="panel-title-row">
+                <h2>Panel 1 · Source code</h2>
+                <span id="cursorPos" class="mono">L1:C1</span>
+              </div>
+
+              <div class="editor-wrapper">
+                <div id="gutter" class="gutter" aria-label="Lines"></div>
+                <textarea id="editor" spellcheck="false" aria-label="Code editor"></textarea>
+              </div>
+              <p class="muted tiny">Click a line number to add/remove an explicit timepoint.</p>
+            </section>
+
+            <section class="panel output-panel">
+              <h2>Panel 2 · Output</h2>
+              <div id="outputBox" class="output-box"></div>
+            </section>
+          </div>
+
+          <section class="panel timeline-panel">
+            <div class="panel-title-row">
+              <h2>Panel 4 · Timeline with timepoints</h2>
+              <button id="clearRunBtn" class="btn" type="button">Clear run</button>
+            </div>
+
+            <div id="timeline" class="timeline" aria-label="Timeline"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
