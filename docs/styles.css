@@ -70,6 +70,26 @@ h1 {
   color: var(--muted);
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.github-link {
+  color: #9ed9ee;
+  font-size: 0.82rem;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.github-link:hover {
+  color: #d6f5ff;
+  border-color: var(--accent);
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 320px 1fr;

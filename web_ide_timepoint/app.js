@@ -28,7 +28,7 @@ const app = {
   timelineCounter: 0,
   timepointEdits: new Map(),
   playbackOutputEntries: null,
-  watchVars: ["retries", "status", "orderID"],
+  watchVars: ["orderID", "retries", "status"],
   runtimeState: {},
   selectedExecutedId: null,
   mode: "explicit",
@@ -41,20 +41,22 @@ const app = {
   runCounter: 0,
 };
 
-ui.editor.value = `function processOrder() {
-  let orderID = "A-1021";
-  let retries = 2;
-  let status = "created";
+ui.editor.value = `package main
 
-  if (retries > 0) {
-    status = "retrying";
+import "fmt"
+
+func main() {
+  orderID := "A-1021"
+  retries := 2
+  status := "created"
+
+  if retries > 0 {
+    status = "retrying"
   }
 
-  console.log("order", orderID);
-  console.log("status", status);
-}
-
-processOrder();`;
+  fmt.Println("order", orderID)
+  fmt.Println("status", status)
+}`;
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -273,51 +275,125 @@ function createRunner(code) {
   );
 }
 
-function transformLine(line) {
-  const varDecl = line.match(/^(\s*)(let|const|var)\s+([A-Za-z_$][\w$]*)\s*(=.*)?;?\s*$/);
-  if (varDecl) {
-    const indent = varDecl[1] || "";
-    const name = varDecl[3];
-    const assignExpr = varDecl[4];
-    if (assignExpr) return `${indent}state.${name} ${assignExpr};`;
-    return `${indent}state.${name} = undefined;`;
+function normalizeGoExpr(expr) {
+  return expr.replace(/\bnil\b/g, "null");
+}
+
+function extractExecutableGoLines(lines) {
+  const mainStart = lines.findIndex((line) => /^\s*func\s+main\s*\(\s*\)\s*\{/.test(line));
+  if (mainStart < 0) {
+    return {
+      hasMain: false,
+      items: lines.map((line, idx) => ({ lineNo: idx + 1, text: line })),
+    };
   }
 
-  const fnDecl = line.match(/^(\s*)function\s+([A-Za-z_$][\w$]*)\s*\(/);
-  if (fnDecl) {
-    const indent = fnDecl[1] || "";
-    const name = fnDecl[2];
-    return line.replace(/^(\s*)function\s+([A-Za-z_$][\w$]*)\s*\(/, `${indent}state.${name} = function ${name}(`);
+  const items = [];
+  let depth = 1;
+
+  for (let i = mainStart + 1; i < lines.length; i += 1) {
+    const text = lines[i];
+    const openCount = (text.match(/{/g) || []).length;
+    const closeCount = (text.match(/}/g) || []).length;
+    const nextDepth = depth + openCount - closeCount;
+    const closesMain = depth === 1 && text.trim() === "}" && nextDepth === 0;
+
+    if (!closesMain) {
+      items.push({ lineNo: i + 1, text });
+    }
+
+    depth = nextDepth;
+    if (depth <= 0) break;
   }
 
-  return line;
+  return { hasMain: true, items };
+}
+
+function compileGoLine(line) {
+  const trimmed = line.trim().replace(/;$/, "");
+  if (!trimmed || trimmed.startsWith("//")) return null;
+  if (/^package\s+/.test(trimmed)) return null;
+  if (/^import\s+/.test(trimmed)) return null;
+  if (/^func\s+/.test(trimmed)) return null;
+
+  if (trimmed === "{" || trimmed === "}") return trimmed;
+  if (/^}\s*else\s*{$/.test(trimmed)) return "} else {";
+  if (/^else\s*{$/.test(trimmed)) return "else {";
+
+  const ifMatch = trimmed.match(/^if\s+(.+)\s*{$/);
+  if (ifMatch) {
+    return `if (${normalizeGoExpr(ifMatch[1])}) {`;
+  }
+
+  const varMatch = trimmed.match(/^var\s+([A-Za-z_]\w*)\s*=\s*(.+)$/);
+  if (varMatch) {
+    return `state.${varMatch[1]} = ${normalizeGoExpr(varMatch[2])};`;
+  }
+
+  const shortDeclMatch = trimmed.match(/^([A-Za-z_]\w*)\s*:=\s*(.+)$/);
+  if (shortDeclMatch) {
+    return `state.${shortDeclMatch[1]} = ${normalizeGoExpr(shortDeclMatch[2])};`;
+  }
+
+  const assignMatch = trimmed.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+  if (assignMatch && !assignMatch[2].startsWith("=")) {
+    return `state.${assignMatch[1]} = ${normalizeGoExpr(assignMatch[2])};`;
+  }
+
+  const incMatch = trimmed.match(/^([A-Za-z_]\w*)\+\+$/);
+  if (incMatch) {
+    return `state.${incMatch[1]} = (state.${incMatch[1]} ?? 0) + 1;`;
+  }
+
+  const decMatch = trimmed.match(/^([A-Za-z_]\w*)--$/);
+  if (decMatch) {
+    return `state.${decMatch[1]} = (state.${decMatch[1]} ?? 0) - 1;`;
+  }
+
+  const printlnMatch = trimmed.match(/^fmt\.Println\((.*)\)$/);
+  if (printlnMatch) {
+    return `console.log(${printlnMatch[1]});`;
+  }
+
+  const printfMatch = trimmed.match(/^fmt\.Printf\((.*)\)$/);
+  if (printfMatch) {
+    return `console.log(${printfMatch[1]});`;
+  }
+
+  if (/^return\b/.test(trimmed)) {
+    return `${normalizeGoExpr(trimmed)};`;
+  }
+
+  return `${normalizeGoExpr(trimmed)};`;
 }
 
 function buildInstrumentedCode(source) {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
+  const { hasMain, items } = extractExecutableGoLines(lines);
   const chunks = [];
+  let executableCount = 0;
 
-  lines.forEach((line, idx) => {
-    const ln = idx + 1;
-    const transformed = transformLine(line);
-    if (line.trim() === "") {
-      chunks.push("");
-      return;
-    }
+  items.forEach(({ lineNo, text }) => {
+    const compiled = compileGoLine(text);
+    if (!compiled) return;
 
-    const trimmed = line.trim();
+    const trimmed = compiled.trim();
     const skipHook =
-      /^}?\s*(else|catch|finally)\b/.test(trimmed) ||
-      /^(case\b|default\b)/.test(trimmed) ||
-      /^}\s*(while\b)/.test(trimmed);
+      trimmed === "}" ||
+      trimmed === "{" ||
+      /^}?\s*else\b/.test(trimmed) ||
+      /^(case\b|default\b)/.test(trimmed);
 
     if (!skipHook) {
-      chunks.push(`__ctx.__line(${ln});`);
+      chunks.push(`__ctx.__line(${lineNo});`);
+      executableCount += 1;
     }
-    chunks.push(transformed);
+    chunks.push(compiled);
   });
 
   return {
+    hasMain,
+    executableCount,
     lines,
     code: chunks.join("\n"),
   };
@@ -545,7 +621,7 @@ function renderTimepointVars() {
 
   const note = document.createElement("p");
   note.className = "muted tiny";
-  note.textContent = "Tip: numbers/objects can be entered as JSON. Plain text is treated as string.";
+  note.textContent = "Tip: use Go-like literals. Numbers/bool/JSON are parsed; plain text is treated as string.";
 
   ui.tpVars.append(grid, actions, note);
 }
@@ -555,7 +631,7 @@ function renderTimeline() {
 
   const nonEmptyTimelines = app.timelines.filter((timeline) => timeline.nodes.length > 0);
   if (!nonEmptyTimelines.length) {
-    ui.timeline.innerHTML = '<p class="empty">No execution yet. Create timepoints and click Run.</p>';
+    ui.timeline.innerHTML = '<p class="empty">No execution yet. Add timepoints and run the Go code.</p>';
     return;
   }
 
@@ -636,11 +712,25 @@ async function executeCode() {
   app.timelines = [rootTimeline];
   setActiveTimeline(rootTimeline.id);
 
-  setStatus("Running...", "idle");
+  setStatus("Running Go code...", "idle");
   renderAll();
 
-  const { code } = buildInstrumentedCode(ui.editor.value);
-  const run = createRunner(code);
+  const compiled = buildInstrumentedCode(ui.editor.value);
+  if (!compiled.hasMain) {
+    pushOutput("error", ['Go error: func main() not found'], 0, 1);
+    setStatus("Execution error", "error");
+    app.running = false;
+    renderAll();
+    return;
+  }
+  if (compiled.executableCount === 0) {
+    pushOutput("error", ["Go error: no executable statements inside func main()"], 0, 1);
+    setStatus("Execution error", "error");
+    app.running = false;
+    renderAll();
+    return;
+  }
+  const run = createRunner(compiled.code);
 
   const ctx = {
     state: app.runtimeState,
@@ -704,11 +794,17 @@ async function runBranchedExecution(selectedInfo, editedSnapshot) {
   setActiveTimeline(branchTimeline.id);
   app.selectedExecutedId = null;
 
-  setStatus("Running branched execution...", "idle");
+  setStatus("Running branched Go execution...", "idle");
   renderAll();
 
-  const { code } = buildInstrumentedCode(ui.editor.value);
-  const run = createRunner(code);
+  const compiled = buildInstrumentedCode(ui.editor.value);
+  if (!compiled.hasMain || compiled.executableCount === 0) {
+    setStatus("Execution error", "error");
+    app.running = false;
+    renderAll();
+    return;
+  }
+  const run = createRunner(compiled.code);
 
   let seenHits = -1;
   let branchStarted = false;

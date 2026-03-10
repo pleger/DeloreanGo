@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Timepoint IDE Web</title>
+    <title>Timepoint IDE for Go</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -12,10 +12,18 @@
       <header class="topbar">
         <div>
           <p class="kicker">Timepoint IDE</p>
-          <h1>Web IDE with execution + timeline</h1>
+          <h1>Web IDE for Go with execution + timeline</h1>
         </div>
         <div class="topbar-right">
           <span id="runStatus" class="run-status">Ready</span>
+          <a
+            class="github-link"
+            href="https://github.com/pleger/Continuaciones_Go"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Go Project on GitHub
+          </a>
         </div>
       </header>
 
@@ -71,9 +79,11 @@
 
               <div class="editor-wrapper">
                 <div id="gutter" class="gutter" aria-label="Lines"></div>
-                <textarea id="editor" spellcheck="false" aria-label="Code editor"></textarea>
+                <textarea id="editor" spellcheck="false" aria-label="Go code editor"></textarea>
               </div>
-              <p class="muted tiny">Click a line number to add/remove an explicit timepoint.</p>
+              <p class="muted tiny">
+                Go mode: click a line number to add/remove an explicit timepoint.
+              </p>
             </section>
 
             <section class="panel output-panel">
